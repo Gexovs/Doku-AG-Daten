@@ -850,4 +850,263 @@ ggsave(
 
 
 
+# =========================================================
+# AKT 1 - KRIEGSDIENSVERWEIGERUNG IN DEUTSCHLAND
+# Zusatzgrafik:
+# Anzahl der Anträge auf KDV in Deutschland steigt rasant!
+# =========================================================
+
+# Pakete ---------------------------------------------------
+
+library(tidyverse)
+library(scales)
+library(stringr)
+library(grid)
+
+
+# Daten ----------------------------------------------------
+
+kdv <- tribble(
+  ~jahr, ~antraege,
+  2020, 137,
+  2021, 201,
+  2022, 951,
+  2023, 1609,
+  2024, 2998,
+  2025, 3867
+)
+
+
+# Aufbereitung ---------------------------------------------
+
+kdv <- kdv %>%
+  mutate(
+    label = label_number(big.mark = ".", decimal.mark = ",")(antraege),
+    fill_col = case_when(
+      jahr == 2020 ~ "#C8C8C8",  # grau
+      jahr == 2021 ~ "#B5B5B5",  # grau
+      jahr == 2022 ~ "#D9A441",  # ocker
+      jahr == 2023 ~ "#E97F25",  # orange
+      jahr == 2024 ~ "#C83E4D",  # rot
+      jahr == 2025 ~ "#8F0D22"   # dunkelrot
+    )
+  )
+
+
+# Prozentanstieg 2021 -> 2025 ------------------------------
+
+anstieg_2021_2025 <- round(
+  (kdv$antraege[kdv$jahr == 2025] / kdv$antraege[kdv$jahr == 2021] - 1) * 100,
+  0
+)
+
+anstieg_label <- label_number(
+  big.mark = ".",
+  decimal.mark = ","
+)(anstieg_2021_2025)
+
+
+# Quellenblock ---------------------------------------------
+# Ziel:
+# - Quellen kompakt halten
+# - aber trotzdem sauber mit Bulletpoints
+# - Folgezeilen eingerückt
+# - stärker über die Breite ziehen
+
+make_bullet <- function(text, width = 255) {
+  wrapped <- str_wrap(text, width = width)
+  lines <- strsplit(wrapped, "\n")[[1]]
+  
+  if (length(lines) == 1) {
+    return(paste0("• ", lines))
+  } else {
+    return(
+      paste0(
+        "• ", lines[1],
+        paste0("\n   ", lines[-1], collapse = "")
+      )
+    )
+  }
+}
+
+zugriff <- "02.05.2026"
+
+quelle_1 <- make_bullet(
+  paste0(
+    "Deutscher Bundestag, Drucksache 20/7858 (neu), „Kriegsdienstverweigerung in Deutschland“, ",
+    "21.07.2023; korrigierte Fassung vom 06.02.2024. ",
+    "URL: https://dserver.bundestag.de/btd/20/078/2007858.pdf ",
+    "(Zugriff am ", zugriff, ")."
+  )
+)
+
+quelle_2 <- make_bullet(
+  paste0(
+    "Deutscher Bundestag, Drucksache 21/898, „Kriegsdienstverweigerung in Deutschland in den Jahren 2024 und 2025“, ",
+    "14.07.2025. URL: https://dserver.bundestag.de/btd/21/008/2100898.pdf ",
+    "(Zugriff am ", zugriff, ")."
+  )
+)
+
+quelle_3 <- make_bullet(
+  paste0(
+    "Der Tagesspiegel, „Musterung ist zurück: Zahl der Kriegsdienstverweigerer steigt“, ",
+    "Stand: 27.04.2026, 05:39 Uhr. ",
+    "URL: https://www.tagesspiegel.de/politik/musterung-ist-zuruck-zahl-der-kriegsdienstverweigerer-steigt-15525699.html ",
+    "(Zugriff am ", zugriff, ")."
+  )
+)
+
+hinweis <- str_wrap(
+  paste(
+    "Hinweis: Eigene Aufbereitung; kein amtlicher Rohdatensatz.",
+    "Der Wert für 2025 wurde ergänzend aus dem genannten Medienbericht",
+    "auf Grundlage einer BAFzA-Angabe übernommen.",
+    "BAFzA- und Bundeswehr-Zahlen können wegen zeitverzögerter Weiterleitung voneinander abweichen."
+  ),
+  width = 255
+)
+
+quellen_text <- paste(
+  "Datengrundlage:",
+  quelle_1,
+  quelle_2,
+  quelle_3,
+  hinweis,
+  sep = "\n"
+)
+
+
+# Grafik ---------------------------------------------------
+
+p <- ggplot(kdv, aes(x = jahr, y = antraege)) +
+  
+  geom_col(
+    aes(fill = fill_col),
+    width = 0.68,
+    show.legend = FALSE
+  ) +
+  
+  scale_fill_identity() +
+  
+  geom_text(
+    aes(label = label),
+    vjust = -0.30,
+    size = 5.1,
+    fontface = "bold",
+    color = "black"
+  ) +
+  
+  annotate(
+    "label",
+    x = 2024.25,
+    y = 820,
+    label = paste0("+", anstieg_label, "%\n2021–2025"),
+    fontface = "bold",
+    size = 4.2,
+    label.size = 0.25,
+    label.r = unit(0.12, "lines"),
+    fill = "#F7F7F3",
+    color = "#8F0D22"
+  ) +
+  
+  scale_x_continuous(
+    breaks = 2020:2025,
+    expand = expansion(mult = c(0.04, 0.04))
+  ) +
+  
+  scale_y_continuous(
+    labels = label_number(big.mark = ".", decimal.mark = ","),
+    limits = c(0, 4100),
+    expand = expansion(mult = c(0, 0.02))
+  ) +
+  
+  labs(
+    title = "Kriegsdienstverweigerung in Deutschland nimmt deutlich zu",
+    subtitle = "Anträge auf Kriegsdienstverweigerung, 2020–2025",
+    x = NULL,
+    y = "Anzahl der KDV-Anträge",
+    caption = quellen_text
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "#F7F7F3", color = NA),
+    panel.background = element_rect(fill = "#F7F7F3", color = NA),
+    
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "grey82", linewidth = 0.35),
+    
+    plot.title = element_text(
+      face = "bold",
+      size = 21,
+      color = "grey10",
+      margin = margin(t = 18, b = 8)
+    ),
+    
+    plot.subtitle = element_text(
+      size = 15.5,
+      color = "grey25",
+      margin = margin(b = 14)
+    ),
+    
+    plot.caption = element_text(
+      size = 6.5,
+      color = "grey35",
+      hjust = 0,
+      lineheight = 0.94,
+      margin = margin(t = 12)
+    ),
+    
+    # wichtig: Caption an Panelbreite ausrichten,
+    # damit sie bis fast ans Ende der Grafik läuft
+    plot.caption.position = "panel",
+    
+    axis.title.y = element_text(
+      size = 12.5,
+      color = "grey25",
+      margin = margin(r = 8)
+    ),
+    
+    axis.text = element_text(color = "grey20"),
+    axis.text.x = element_text(size = 12.5),
+    axis.text.y = element_text(size = 11.5),
+    
+    # unten kompakter als bisher
+    plot.margin = margin(t = 8, r = 16, b = 100, l = 18)
+  )
+
+
+# anzeigen --------------------------------------------------
+
+p
+
+
+# speichern -------------------------------------------------
+# minimal breiter exportieren hilft zusätzlich beim Quellenblock
+
+ggsave(
+  filename = "kdv_deutschland_2020_2025_final_breite_caption.png",
+  plot = p,
+  width = 12.6,
+  height = 7.9,
+  dpi = 300,
+  bg = "#F7F7F3"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
