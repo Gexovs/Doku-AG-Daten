@@ -1,0 +1,113 @@
+
+<style>
+  .titel { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+  .untertitel { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 16px; }
+  .grid { display: flex; flex-direction: column; gap: 5px; }
+  .reihe { display: flex; gap: 4px; align-items: center; }
+  .label-l { font-size: 11px; color: var(--color-text-secondary); width: 50px; text-align: right; line-height: 1.2; flex-shrink: 0; white-space: pre-line; }
+  .label-r { font-size: 11px; color: var(--color-text-secondary); width: 50px; text-align: left; line-height: 1.2; flex-shrink: 0; white-space: pre-line; }
+  .figur { width: 26px; height: 35px; transition: fill 0.35s ease; }
+  .legende { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); }
+  .leg-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .btn { margin-top: 16px; padding: 8px 20px; font-size: 13px; border-radius: var(--border-radius-md); cursor: pointer; margin-right: 8px; }
+</style>
+
+<p class="titel">Wie sicher fühlen sich junge Österreicher:innen?</p>
+<p class="untertitel">Angaben in Prozent | AFP3 Survey 2023–2025 | unter 35 Jahren</p>
+
+<div class="grid" id="grid"></div>
+
+<div class="legende">
+  <div class="leg-item"><div class="leg-dot" style="background:#c1121f"></div>Ganz unsicher</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#f4a261"></div>Eher unsicher</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#c8e06a"></div>Eher sicher</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2d6a4f"></div>Sehr sicher</div>
+</div>
+
+<div>
+  <button class="btn" onclick="startAnim()">Animation starten</button>
+  <button class="btn" onclick="resetAnim()">Zurücksetzen</button>
+</div>
+
+<script>
+const COLS = 20;
+const ROWS = 5;
+const TOTAL = COLS * ROWS;
+
+const colors = {
+  gray: '#adb5bd',
+  rot: '#c1121f',
+  orange: '#f4a261',
+  gelbgruen: '#c8e06a',
+  gruen: '#2d6a4f'
+};
+
+const zielfarben = [
+  'rot','rot','rot','rot','rot','rot','rot','rot','rot','rot','rot','orange','orange','orange','orange','orange','orange','orange','orange','orange',
+  'orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange',
+  'orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','orange','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen',
+  'gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen',
+  'gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gelbgruen','gruen','gruen','gruen','gruen','gruen'
+];
+
+const labels_l = ['ganz\nunsicher', '', '', '', ''];
+const labels_r = ['', '', '', '', 'sehr\nsicher'];
+
+let svgs = [];
+let timer = null;
+
+const grid = document.getElementById('grid');
+
+for (let r = 0; r < ROWS; r++) {
+  const reihe = document.createElement('div');
+  reihe.className = 'reihe';
+
+  const ll = document.createElement('div');
+  ll.className = 'label-l';
+  ll.textContent = labels_l[r] || '';
+  reihe.appendChild(ll);
+
+  for (let c = 0; c < COLS; c++) {
+    const idx = r * COLS + c;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 28 38');
+    svg.setAttribute('class', 'figur');
+    svg.innerHTML = `<ellipse cx="14" cy="8" rx="6" ry="6" fill="${colors.gray}"/>
+      <path d="M4 38 Q4 22 14 22 Q24 22 24 38 Z" fill="${colors.gray}"/>`;
+    reihe.appendChild(svg);
+    svgs.push({ svg, idx });
+  }
+
+  const lr = document.createElement('div');
+  lr.className = 'label-r';
+  lr.textContent = labels_r[r] || '';
+  reihe.appendChild(lr);
+
+  grid.appendChild(reihe);
+}
+
+function setColor(svgEl, farbe) {
+  const c = colors[farbe];
+  svgEl.querySelectorAll('ellipse, path').forEach(el => el.setAttribute('fill', c));
+}
+
+function resetAnim() {
+  if (timer) { clearTimeout(timer); timer = null; }
+  svgs.forEach(({ svg }) => {
+    svg.querySelectorAll('ellipse, path').forEach(el => el.setAttribute('fill', colors.gray));
+  });
+}
+
+function startAnim() {
+  resetAnim();
+  let i = 0;
+  function next() {
+    if (i >= TOTAL) return;
+    setColor(svgs[i].svg, zielfarben[i]);
+    i++;
+    timer = setTimeout(next, 70);
+  }
+  next();
+}
+</script>
